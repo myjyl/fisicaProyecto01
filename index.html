@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador Física UMG - Grupo 6</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Monitoreo de Movimiento y Análisis Físico</h2>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label>Movimiento</label>
+                <select id="tipoMov" onchange="alternarCampos()">
+                    <option value="MRU">MRU</option>
+                    <option value="MRUV">MRUV</option>
+                    <option value="CAIDA">Caída Libre</option>
+                    <option value="PARABOLICO">Tiro Parabólico</option>
+                </select>
+            </div>
+            <div class="input-group"><label>V. Inicial (m/s)</label><input type="number" id="v0" value="15"></div>
+            <div class="input-group" id="groupAcc"><label>Aceleración (m/s²)</label><input type="number" id="acc" value="2"></div>
+            <div class="input-group" id="groupAng" style="display:none;"><label>Ángulo (°)</label><input type="number" id="grado" value="45"></div>
+            <div class="input-group"><label>Tiempo (s)</label><input type="number" id="tMax" value="5"></div>
+            <button onclick="iniciarSimulacion()">Ejecutar Análisis</button>
+        </div>
+
+        <div class="animation-wrapper">
+            <canvas id="animacionCanvas" width="800" height="250"></canvas>
+            <div id="statsOverlay">Tiempo: 0.00s</div>
+        </div>
+
+        <div class="results-grid">
+            <div class="formula-box">
+                <strong>Clasificación:</strong> <span id="resTipo">---</span><br>
+                <strong>Variables:</strong> <span id="resVar">Esperando datos...</span>
+            </div>
+            <div class="charts-container">
+                <div class="chart-small"><canvas id="chartX"></canvas></div>
+                <div class="chart-small"><canvas id="chartV"></canvas></div>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="camera-section">
+            <h3 class="section-title">Captura de Movimiento Física por Cámara (Real-Time Tracking)</h3>
+            <p class="camera-info">
+                Calibra el rastreador especificando la distancia física al plano de movimiento. 
+                Luego, haz clic sobre el objeto de color llamativo (como una pelota roja, azul o verde) 
+                en la cámara para fijar su objetivo y registrar su física en tiempo real.
+            </p>
+            
+            <div class="camera-controls">
+                <div class="input-group">
+                    <label>Distancia al Objeto (m)</label>
+                    <input type="number" id="camDistancia" value="1.5" step="0.1" min="0.1">
+                </div>
+                <div class="camera-actions">
+                    <button id="btnCamToggle" onclick="toggleCamara()" class="btn-cam-control btn-inactive">Activar Cámara</button>
+                    <button id="btnCamRecord" onclick="toggleGrabacion()" class="btn-cam-control btn-record" disabled>Iniciar Grabación</button>
+                    <button id="btnCamReset" onclick="resetCamaraData()" class="btn-cam-control btn-reset">Restablecer Datos</button>
+                </div>
+            </div>
+            
+            <div class="camera-feed-container">
+                <!-- Video oculto para procesamiento -->
+                <video id="webcamVideo" autoplay playsinline style="display:none;"></video>
+                
+                <!-- Canvas de render y tracking -->
+                <div class="canvas-cam-wrapper">
+                    <canvas id="webcamCanvas" width="600" height="350"></canvas>
+                    <div id="camOverlayStatus" class="cam-status-text">CÁMARA APAGADA</div>
+                </div>
+                
+                <!-- Panel lateral de métricas experimentales -->
+                <div class="cam-metrics-box">
+                    <h4>Métricas Experimentales</h4>
+                    <div class="metric-row"><strong>Rastreador:</strong> <span id="trackStatus" class="status-badge status-off">Desconectado</span></div>
+                    <div class="metric-row"><strong>Color Clave:</strong> 
+                        <span id="trackedColorIndicator" class="color-dot"></span> 
+                        <span id="trackedColorValue">Ninguno (Haz clic en el video)</span>
+                    </div>
+                    <div class="metric-row"><strong>Posición X (Dist.):</strong> <span id="trackX" class="metric-val">0.00 m</span></div>
+                    <div class="metric-row"><strong>Posición Y (Alt.):</strong> <span id="trackY" class="metric-val">0.00 m</span></div>
+                    <div class="metric-row"><strong>Velocidad V:</strong> <span id="trackV" class="metric-val">0.00 m/s</span></div>
+                    <div class="metric-row"><strong>Mov. Detectado:</strong> <strong id="trackMovDetectado" class="mov-badge">Esperando datos...</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
