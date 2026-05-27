@@ -1,96 +1,396 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Simulador Física UMG - Grupo 6</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador y Cámara de Movimiento — UMG</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-    <div class="container">
-        <h2>Monitoreo de Movimiento y Análisis Físico</h2>
-        
-        <div class="controls">
-            <div class="input-group">
-                <label>Movimiento</label>
-                <select id="tipoMov" onchange="alternarCampos()">
-                    <option value="MRU">MRU</option>
-                    <option value="MRUV">MRUV</option>
-                    <option value="CAIDA">Caída Libre</option>
-                    <option value="PARABOLICO">Tiro Parabólico</option>
-                </select>
-            </div>
-            <div class="input-group"><label>V. Inicial (m/s)</label><input type="number" id="v0" value="15"></div>
-            <div class="input-group" id="groupAcc"><label>Aceleración (m/s²)</label><input type="number" id="acc" value="2"></div>
-            <div class="input-group" id="groupAng" style="display:none;"><label>Ángulo (°)</label><input type="number" id="grado" value="45"></div>
-            <div class="input-group"><label>Tiempo (s)</label><input type="number" id="tMax" value="5"></div>
-            <button onclick="iniciarSimulacion()">Ejecutar Análisis</button>
+
+    <header class="header">
+        <div class="header-logo">⚡</div>
+        <div>
+            <h1>Física Aplicada</h1>
+            <span>Análisis Cinemático Cinético</span>
         </div>
 
-        <div class="animation-wrapper">
-            <canvas id="animacionCanvas" width="800" height="250"></canvas>
-            <div id="statsOverlay">Tiempo: 0.00s</div>
+        <!-- Segmented Mode Toggle -->
+        <div class="mode-toggle-container">
+            <button class="mode-btn active" id="mode-btn-sim" onclick="setAppMode('sim')">
+                Simulador Teórico
+            </button>
+            <button class="mode-btn" id="mode-btn-cam" onclick="setAppMode('cam')">
+                Cámara Física Real
+            </button>
         </div>
 
-        <div class="results-grid">
-            <div class="formula-box">
-                <strong>Clasificación:</strong> <span id="resTipo">---</span><br>
-                <strong>Variables:</strong> <span id="resVar">Esperando datos...</span>
-            </div>
-            <div class="charts-container">
-                <div class="chart-small"><canvas id="chartX"></canvas></div>
-                <div class="chart-small"><canvas id="chartV"></canvas></div>
-            </div>
-        </div>
+        <div class="badge" id="app-mode-badge">Modo Simulador</div>
+    </header>
 
-        <hr class="divider">
+    <div class="layout">
+        <aside class="sidebar">
 
-        <div class="camera-section">
-            <h3 class="section-title">Captura de Movimiento Física por Cámara (Real-Time Tracking)</h3>
-            <p class="camera-info">
-                Calibra el rastreador especificando la distancia física al plano de movimiento. 
-                Luego, haz clic sobre el objeto de color llamativo (como una pelota roja, azul o verde) 
-                en la cámara para fijar su objetivo y registrar su física en tiempo real.
-            </p>
-            
-            <div class="camera-controls">
-                <div class="input-group">
-                    <label>Distancia al Objeto (m)</label>
-                    <input type="number" id="camDistancia" value="1.5" step="0.1" min="0.1">
+            <!-- SIMULATOR CONTROL PANEL -->
+            <div id="sim-controls-panel">
+                <div class="section-label">Tipo de Movimiento</div>
+                <div class="motion-tabs">
+                    <button class="motion-tab active" onclick="setMotion('MRU')" id="tab-MRU">
+                        <div class="tab-icon">→</div>
+                        <div>
+                            <div>MRU</div>
+                            <div style="font-size:11px;color:var(--text3);font-weight:400">Velocidad constante</div>
+                        </div>
+                    </button>
+                    <button class="motion-tab" onclick="setMotion('MRUV')" id="tab-MRUV">
+                        <div class="tab-icon">⇒</div>
+                        <div>
+                            <div>MRUV</div>
+                            <div style="font-size:11px;color:var(--text3);font-weight:400">Aceleración constante</div>
+                        </div>
+                    </button>
+                    <button class="motion-tab" onclick="setMotion('CAIDA')" id="tab-CAIDA">
+                        <div class="tab-icon">↓</div>
+                        <div>
+                            <div>Caída Libre</div>
+                            <div style="font-size:11px;color:var(--text3);font-weight:400">g = 9.8 m/s²</div>
+                        </div>
+                    </button>
+                    <button class="motion-tab" onclick="setMotion('PARABOLICO')" id="tab-PARABOLICO">
+                        <div class="tab-icon">⌒</div>
+                        <div>
+                            <div>Tiro Parabólico</div>
+                            <div style="font-size:11px;color:var(--text3);font-weight:400">Movimiento 2D</div>
+                        </div>
+                    </button>
                 </div>
-                <div class="camera-actions">
-                    <button id="btnCamToggle" onclick="toggleCamara()" class="btn-cam-control btn-inactive">Activar Cámara</button>
-                    <button id="btnCamRecord" onclick="toggleGrabacion()" class="btn-cam-control btn-record" disabled>Iniciar Grabación</button>
-                    <button id="btnCamReset" onclick="resetCamaraData()" class="btn-cam-control btn-reset">Restablecer Datos</button>
-                </div>
-            </div>
-            
-            <div class="camera-feed-container">
-                <!-- Video oculto para procesamiento -->
-                <video id="webcamVideo" autoplay playsinline style="display:none;"></video>
-                
-                <!-- Canvas de render y tracking -->
-                <div class="canvas-cam-wrapper">
-                    <canvas id="webcamCanvas" width="600" height="350"></canvas>
-                    <div id="camOverlayStatus" class="cam-status-text">CÁMARA APAGADA</div>
-                </div>
-                
-                <!-- Panel lateral de métricas experimentales -->
-                <div class="cam-metrics-box">
-                    <h4>Métricas Experimentales</h4>
-                    <div class="metric-row"><strong>Rastreador:</strong> <span id="trackStatus" class="status-badge status-off">Desconectado</span></div>
-                    <div class="metric-row"><strong>Color Clave:</strong> 
-                        <span id="trackedColorIndicator" class="color-dot"></span> 
-                        <span id="trackedColorValue">Ninguno (Haz clic en el video)</span>
+
+                <hr class="divider">
+
+                <!-- MRU Controls -->
+                <div id="ctrl-MRU">
+                    <div class="section-label">Parámetros MRU</div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Velocidad (v)</span><span class="control-value"
+                                id="v0-mru-val">10 m/s</span></div>
+                        <input type="range" id="v0-mru" min="1" max="50" value="10" step="1" oninput="updateParams()">
                     </div>
-                    <div class="metric-row"><strong>Posición X (Dist.):</strong> <span id="trackX" class="metric-val">0.00 m</span></div>
-                    <div class="metric-row"><strong>Posición Y (Alt.):</strong> <span id="trackY" class="metric-val">0.00 m</span></div>
-                    <div class="metric-row"><strong>Velocidad V:</strong> <span id="trackV" class="metric-val">0.00 m/s</span></div>
-                    <div class="metric-row"><strong>Mov. Detectado:</strong> <strong id="trackMovDetectado" class="mov-badge">Esperando datos...</strong></div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Posición inicial (x₀)</span><span class="control-value"
+                                id="x0-mru-val">0 m</span></div>
+                        <input type="range" id="x0-mru" min="0" max="100" value="0" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Duración (t)</span></div>
+                        <input type="number" id="dur-mru" min="1" max="3600" value="10" step="1"
+                            oninput="updateParams()"
+                            style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:8px 12px;outline:none;">
+                    </div>
+                </div>
+
+                <!-- MRUV Controls -->
+                <div id="ctrl-MRUV" style="display:none">
+                    <div class="section-label">Parámetros MRUV</div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Velocidad inicial (v₀)</span><span class="control-value"
+                                id="v0-mruv-val">5 m/s</span></div>
+                        <input type="range" id="v0-mruv" min="0" max="40" value="5" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Aceleración (a)</span><span class="control-value"
+                                id="a-mruv-val">3 m/s²</span></div>
+                        <input type="range" id="a-mruv" min="-20" max="20" value="3" step="0.5"
+                            oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Posición inicial (x₀)</span><span class="control-value"
+                                id="x0-mruv-val">0 m</span></div>
+                        <input type="range" id="x0-mruv" min="0" max="50" value="0" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Duración (t)</span></div>
+                        <input type="number" id="dur-mruv" min="1" max="3600" value="10" step="1"
+                            oninput="updateParams()"
+                            style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:8px 12px;outline:none;">
+                    </div>
+                </div>
+
+                <!-- CAIDA Libre Controls -->
+                <div id="ctrl-CAIDA" style="display:none">
+                    <div class="section-label">Parámetros Caída Libre</div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Altura inicial (y₀)</span><span class="control-value"
+                                id="h0-caida-val">80 m</span></div>
+                        <input type="range" id="h0-caida" min="10" max="200" value="80" step="5"
+                            oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Velocidad inicial (v₀)</span><span class="control-value"
+                                id="v0-caida-val">0 m/s</span></div>
+                        <input type="range" id="v0-caida" min="0" max="30" value="0" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Duración (t)</span></div>
+                        <input type="number" id="dur-caida" min="1" max="3600" value="10" step="1"
+                            oninput="updateParams()"
+                            style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:8px 12px;outline:none;">
+                    </div>
+                    <div
+                        style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--coral);font-weight:500;">
+                        g = 9.8 m/s² (constante)
+                    </div>
+                </div>
+
+                <!-- PARABOLICO Controls -->
+                <div id="ctrl-PARABOLICO" style="display:none">
+                    <div class="section-label">Parámetros Tiro Parabólico</div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Velocidad inicial (v₀)</span><span class="control-value"
+                                id="v0-par-val">25 m/s</span></div>
+                        <input type="range" id="v0-par" min="5" max="60" value="25" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Ángulo (θ)</span><span class="control-value"
+                                id="ang-par-val">45°</span></div>
+                        <input type="range" id="ang-par" min="5" max="85" value="45" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Altura inicial (y₀)</span><span class="control-value"
+                                id="y0-par-val">0 m</span></div>
+                        <input type="range" id="y0-par" min="0" max="50" value="0" step="1" oninput="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label"><span>Duración (t)</span></div>
+                        <input type="number" id="dur-par" min="1" max="3600" value="10" step="1"
+                            oninput="updateParams()"
+                            style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:8px 12px;outline:none;">
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn primary" onclick="startSim()">▶ Simular</button>
+                    <button class="btn danger" onclick="resetSim()">↺ Reset</button>
                 </div>
             </div>
-        </div>
+
+            <!-- CAMERA CONTROL PANEL -->
+            <div id="cam-controls-panel">
+                <div class="section-label" style="color:#0891b2;">Controles de Cámara</div>
+
+                <div class="cam-panel">
+                    <!-- CAMERA TOGGLE -->
+                    <button class="btn primary" id="btnCamToggle" onclick="toggleCamara()" style="width:100%;">
+                        Activar Cámara
+                    </button>
+
+                    <div class="cam-separator"></div>
+
+                    <!-- CALIBRACIÓN POR DISTANCIA -->
+                    <div>
+                        <div class="cam-step-header">
+                            <div class="cam-step-num">1</div>
+                            <div class="cam-step-title">Calibración Espacial</div>
+                        </div>
+                        <div class="cam-step-body">
+                            <div class="cam-hint">Indica la distancia real desde la cámara al plano del movimiento.
+                            </div>
+                            <div class="cam-input-row">
+                                <label>Distancia real:</label>
+                                <input type="number" class="cam-input" id="camDistancia" value="1.5" min="0.1" max="20"
+                                    step="0.1">
+                                <span class="cam-input-unit">metros</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cam-separator"></div>
+
+                    <!-- MEDICIÓN AUTO-TRACKING -->
+                    <div>
+                        <div class="cam-step-header">
+                            <div class="cam-step-num">2</div>
+                            <div class="cam-step-title">Auto-Rastreador</div>
+                        </div>
+                        <div class="cam-step-body">
+                            <div class="cam-hint" id="cam-measure-hint">Haz clic sobre un objeto de color llamativo en
+                                el video para fijar el rastreo automático y empezar a registrar.</div>
+
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn" id="btnCamRecord" onclick="toggleGrabacion()" style="flex:2;"
+                                    disabled>
+                                    Iniciar Grabación
+                                </button>
+                                <button class="btn danger" onclick="resetCamaraData()" style="flex:1;">
+                                    Restablecer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE TELEMETRY CARD -->
+                <div class="telemetry-card">
+                    <div class="section-label" style="margin-bottom:8px;">Telemetría en Vivo</div>
+
+                    <div class="telemetry-row">
+                        <strong>Rastreador:</strong>
+                        <span id="trackStatus" class="status-badge status-off">Desconectado</span>
+                    </div>
+                    <div class="telemetry-row">
+                        <strong>Color Fijado:</strong>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span id="trackedColorIndicator" class="color-dot"></span>
+                            <span id="trackedColorValue" class="telemetry-val" style="font-size:11px;">Ninguno</span>
+                        </div>
+                    </div>
+                    <div class="telemetry-row">
+                        <strong>Posición X:</strong>
+                        <span id="trackX" class="telemetry-val">0.00 m</span>
+                    </div>
+                    <div class="telemetry-row">
+                        <strong>Posición Y:</strong>
+                        <span id="trackY" class="telemetry-val">0.00 m</span>
+                    </div>
+                    <div class="telemetry-row">
+                        <strong>Velocidad V:</strong>
+                        <span id="trackV" class="telemetry-val">0.00 m/s</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="main">
+            <!-- CANVAS CARD (SHARED) -->
+            <div class="canvas-card">
+                <div class="canvas-header">
+                    <div>
+                        <div class="canvas-title" id="canvas-title">Movimiento Rectilíneo Uniforme</div>
+                        <div style="font-size:12px;color:var(--text2);margin-top:2px" id="canvas-subtitle">Animación en
+                            tiempo real</div>
+                    </div>
+
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span class="motion-type-indicator status-badge status-on" id="camMovTypeDisplay"
+                            style="display:none; background:rgba(6,182,212,0.1); color:#0891b2;">MRU</span>
+                        <div class="motion-type-badge" id="motion-badge"
+                            style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);color:var(--blue)">
+                            MRU</div>
+                    </div>
+                </div>
+
+                <canvas id="simCanvas" height="280"></canvas>
+
+                <div class="status-bar">
+                    <div class="status-dot" id="status-dot" style="background:var(--text3)"></div>
+                    <span id="status-text">Listo para simular</span>
+                    <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:500;"
+                        id="time-display">t = 0.00 s</span>
+                </div>
+            </div>
+
+            <!-- SIMULATOR METRICS GRID -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Posición</div>
+                    <div class="metric-value" style="color:var(--blue)" id="metric-pos">0.00<span
+                            class="metric-unit">m</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Velocidad</div>
+                    <div class="metric-value" style="color:var(--green)" id="metric-vel">0.00<span
+                            class="metric-unit">m/s</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Aceleración</div>
+                    <div class="metric-value" style="color:var(--amber)" id="metric-acc">0.00<span
+                            class="metric-unit">m/s²</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Tiempo</div>
+                    <div class="metric-value" style="color:var(--accent2)" id="metric-time">0.00<span
+                            class="metric-unit">s</span></div>
+                </div>
+            </div>
+
+            <!-- CAMERA ONLY METRICS GRID -->
+            <div class="metrics-grid camera-only-metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Tiempo Capturado</div>
+                    <div class="metric-value" style="color:var(--accent2)" id="camMetricTime">0.00<span
+                            class="metric-unit">s</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Velocidad Final</div>
+                    <div class="metric-value" style="color:var(--green)" id="camMetricVmax">0.00<span
+                            class="metric-unit">m/s</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Distancia Recorrida</div>
+                    <div class="metric-value" style="color:var(--blue)" id="camMetricDist">0.00<span
+                            class="metric-unit">m</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Movimiento Detectado</div>
+                    <div class="metric-value"
+                        style="color:var(--amber); font-family:inherit; font-size:16px; margin-top:4px;"
+                        id="trackMovDetectado">Esperando...</div>
+                </div>
+            </div>
+
+            <!-- CHARTS GRID -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Posición vs Tiempo (x-t)</div>
+                    <div class="chart-wrap"><canvas id="chartPos"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Velocidad vs Tiempo (v-t)</div>
+                    <div class="chart-wrap"><canvas id="chartVel"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Aceleración vs Tiempo (a-t)</div>
+                    <div class="chart-wrap"><canvas id="chartAcc"></canvas></div>
+                </div>
+            </div>
+
+            <!-- EQUATIONS CARD -->
+            <div class="eq-card">
+                <div class="eq-title">Fundamento Físico Aplicado</div>
+                <div class="eq-list" id="eq-list"></div>
+            </div>
+
+            <!-- VISUALLY HIDDEN VALIDATION TABLE -->
+            <div class="validation" style="display:none !important;">
+                <div class="validation-header">Validación — Comparación teórica vs simulada</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Instante (t)</th>
+                            <th>Posición teórica</th>
+                            <th>Posición simulada</th>
+                            <th>Error %</th>
+                            <th>Velocidad teórica</th>
+                            <th>Velocidad simulada</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="valid-tbody"></tbody>
+                </table>
+            </div>
+        </main>
     </div>
+
+    <!-- Hidden webcam element -->
+    <video id="camVideo" autoplay muted playsinline style="display:none;"></video>
+
     <script src="script.js"></script>
 </body>
+
 </html>
